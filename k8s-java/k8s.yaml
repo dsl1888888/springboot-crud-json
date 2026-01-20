@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: springboot-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: springboot-app
+  template:
+    metadata:
+      labels:
+        app: springboot-app
+    spec:
+      imagePullSecrets:
+        - name: aliyun-acr-secret  # 如果不需要可以删除
+      containers:
+        - name: springboot-app
+          image: registry.cn-hongkong.aliyuncs.com/demollx/my-springboot-crud-json-forjava-image:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          env:
+            - name: JAVA_OPTS
+              value: "-Xms256m -Xmx512m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: springboot-app-service
+spec:
+  selector:
+    app: springboot-app
+  ports:
+    - protocol: TCP
+      port: 80          # 改为 80，这是 Ingress 访问的标准端口
+      targetPort: 8080  # 这个保持 8080，是容器端口
+  type: ClusterIP       # 改为 ClusterIP ，  如果是 LoadBalancer (Pending) 会显示pendding
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: springboot-app-ingress
+spec:
+  rules:
+    - host: java.ingress.llx123456.space
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: springboot-app-service
+                port:
+                  number: 80    # 这里也要改为 80

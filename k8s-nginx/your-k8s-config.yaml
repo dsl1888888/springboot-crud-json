@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      imagePullSecrets:
+        - name: aliyun-acr-secret   # remove if not needed
+      containers:
+        - name: nginx
+          image: registry.cn-hongkong.aliyuncs.com/demollx/my-springboot-crud-json-fornginx-image:latest  # Make sure to update the image URL dynamically
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80  # Exposes port 80 on the nginx container
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service
+spec:
+  selector:
+    app: nginx
+  ports:
+    - protocol: TCP
+      port: 80        # Exposes the service on port 80
+      targetPort: 80   # Matches the container's exposed port
+      nodePort: 30080  # Optional: Choose a specific port for NodePort
+  type: NodePort      # Change from LoadBalancer to NodePort

@@ -1,0 +1,97 @@
+pipeline {
+    agent any
+
+    environment {
+        JAVA_HOME = '/usr/lib/jvm/java-1.21.0-openjdk-amd64'
+        MAVEN_HOME = '/usr/share/maven'
+        BUILD_TIMESTAMP = sh(script: "date +'%Y-%m-%d_%H-%M-%S'", returnStdout: true).trim()
+        // Define your repo URL here for easier maintenance
+        REPO_URL = 'http://20.205.17.19:8801/root/springboot-crud-json'
+    }
+
+    stages {
+        stage('Initialize') {
+            steps {
+                echo ".................................................................................................."
+                echo "Job Name: ${JOB_NAME}"
+                echo "Build Number: ${BUILD_NUMBER}"
+                echo "Workspace: ${WORKSPACE}"
+                echo "Build Timestamp: ${BUILD_TIMESTAMP}"
+                echo ".................................................................................................."
+            }
+        }
+
+        stage('Git Clone') {
+            steps {
+                echo "Cloning source code from repository..."
+                // Ensure you have created credentials in Jenkins with ID 'git-repo-creds'
+                git branch: 'main', 
+                    credentialsId: 'git-usename-password-19', 
+                    url: "${env.REPO_URL}"
+            }
+        }
+
+        stage('Maven Build') {
+            steps {
+                echo "Running Maven clean install..."
+                script {
+                    sh "${MAVEN_HOME}/bin/mvn clean install -DskipTests"
+                }
+            }
+        }
+
+        stage('Build and Copy JAR') {
+            steps {
+                echo "Start copying JAR file..."
+                script {
+                    sh 'mkdir -p /opt/jar'
+                    sh "cp ${WORKSPACE}/target/springboot-crud-json-0.0.1-SNAPSHOT.jar /opt/jar/springboot-crud-json-${BUILD_TIMESTAMP}-${BUILD_NUMBER}.jar"
+                }
+            }
+        }
+
+        stage('Kill Spring Boot Application') {
+            steps {
+                echo "Killing existing application..."
+                script {
+                    // Kills any java process running a jar with the name pattern
+                    sh 'pkill -f "springboot-crud-json" || true'
+                }
+            }
+        }
+
+        stage('Start Spring Boot Application') {
+            steps {
+                echo "Starting the new application..."
+                script {
+                    sh """
+                        export JENKINS_NODE_COOKIE=dontKillMe
+                        nohup java -jar /opt/jar/springboot-crud-json-${BUILD_TIMESTAMP}-${BUILD_NUMBER}.jar --server.port=8600 > /tmp/app.log 2>&1 &
+                    """
+                }
+            }
+        }
+
+        stage('Verify and Check Application') {
+            steps {
+                echo "Verifying the process..."
+                script {
+                    // Wait a few seconds for the app to initialize
+                    sleep 10
+                    sh "ps aux | grep springboot-crud-json-${BUILD_TIMESTAMP}-${BUILD_NUMBER}.jar | grep -v grep"
+                    
+                    echo "Application should be available at: http://20.205.24.40:8600/api/users"
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "Spring Boot application deployed successfully!"
+        }
+        failure {
+            echo "Deployment failed. Please check the logs."
+        }
+    }
+}

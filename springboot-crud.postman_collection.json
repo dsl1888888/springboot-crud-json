@@ -1,0 +1,27 @@
+{
+  "info": {
+    "name": "Spring Boot CRUD JSON",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Create User",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Alice\",\n  \"email\": \"alice@test.com\"\n}"
+        },
+        "url": "http://localhost:8080/api/users"
+      }
+    },
+    {
+      "name": "Get All Users",
+      "request": {
+        "method": "GET",
+        "url": "http://localhost:8080/api/users"
+      }
+    }
+  ]
+}

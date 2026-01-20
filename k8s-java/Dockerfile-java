@@ -1,0 +1,35 @@
+# =========================
+# Build stage
+# =========================
+FROM maven:3.9.9-eclipse-temurin-21 AS builder
+
+WORKDIR /app
+
+# Copy pom.xml and download dependencies first (cache friendly)
+COPY ../pom.xml .
+RUN mvn -B dependency:go-offline
+
+# Copy source code
+COPY ../src ./src
+
+# Build jar
+RUN mvn -B clean package -DskipTests
+
+# =========================
+# Runtime stage
+# =========================
+FROM eclipse-temurin:21-jre-jammy
+
+WORKDIR /app
+
+# Copy jar from build stage
+COPY --from=builder /app/target/*.jar app.jar
+
+# Expose Spring Boot port
+EXPOSE 8080
+
+# JVM options (adjust if needed)
+ENV JAVA_OPTS="-Xms256m -Xmx512m"
+
+# Run application
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
