@@ -16,7 +16,8 @@ spec:
         - name: aliyun-acr-secret   # remove if not needed
       containers:
         - name: nginx
-          image: registry.cn-hongkong.aliyuncs.com/demollx/my-springboot-crud-json-fornginx-image:latest  # Make sure to update the image URL dynamically
+          # image: registry.cn-hongkong.aliyuncs.com/demollx/my-springboot-crud-json-fornginx-image:latest  # Make sure to update the image URL dynamically
+          image: harbor.llx123456.space:1443/private/my-springboot-crud-json-fornginx-image:latest # Make sure to update the image URL dynamically
           imagePullPolicy: Always
           ports:
             - containerPort: 80  # Exposes port 80 on the nginx container

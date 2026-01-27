@@ -16,7 +16,9 @@ spec:
         - name: aliyun-acr-secret  # 如果不需要可以删除
       containers:
         - name: springboot-app
-          image: registry.cn-hongkong.aliyuncs.com/demollx/my-springboot-crud-json-forjava-image:latest
+          # image: registry.cn-hongkong.aliyuncs.com/demollx/my-springboot-crud-json-forjava-image:latest
+          image: harbor.llx123456.space:1443/private/my-springboot-crud-json-forjava-image:latest
+          
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
