@@ -1,0 +1,137 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: springboot-app-hpa
+  namespace: default  # 指定命名空间，如果不在 default 请修改
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: springboot-app
+
+  minReplicas: 2          # NEVER 1 for JVM in prod
+  maxReplicas: 10
+
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 30
+      policies:
+        - type: Percent
+          value: 100        # can double
+          periodSeconds: 60
+        - type: Pods
+          value: 4
+          periodSeconds: 60
+      selectPolicy: Max
+
+    scaleDown:
+      stabilizationWindowSeconds: 600   # 10 minutes
+      policies:
+        - type: Percent
+          value: 20        # very slow shrink
+          periodSeconds: 120
+
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 55
+
+#######################################################
+#apiVersion: autoscaling/v2
+#kind: HorizontalPodAutoscaler
+#metadata:
+#  name: springboot-app-hpa
+#  namespace: default  # 指定命名空间，如果不在 default 请修改
+#spec:
+#  scaleTargetRef:
+#    apiVersion: apps/v1
+#    kind: Deployment
+#    name: springboot-app
+#  minReplicas: 1      # 最小副本数设为1，提高可用性
+#  maxReplicas: 10     # 最大副本数
+#  behavior:           # 扩缩容行为配置
+#    scaleDown:
+#      stabilizationWindowSeconds: 300  # 缩容稳定窗口5分钟
+#      policies:
+#        - type: Percent
+#          value: 10
+#          periodSeconds: 60
+#    scaleUp:
+#      stabilizationWindowSeconds: 60   # 扩容稳定窗口1分钟
+#      policies:
+#        - type: Percent
+#          value: 100
+#          periodSeconds: 60
+#        - type: Pods
+#          value: 4
+#          periodSeconds: 60
+#      selectPolicy: Max
+#  metrics:
+#    - type: Resource
+#      resource:
+#        name: cpu
+#        target:
+#          type: Utilization
+#          averageUtilization: 60
+#    - type: Resource
+#      resource:
+#        name: memory
+#        target:
+#          type: Utilization
+#          averageUtilization: 75
+###############################################################################################
+#    - type: Pods  # 自定义指标（可选）：基于 QPS 的自动扩缩
+#      pods:
+#        metric:
+#          name: http_requests_per_second
+#        target:
+#          type: AverageValue
+#          averageValue: 100
+
+# #######################################################针对 Java 应用优化的版本
+# apiVersion: autoscaling/v2
+# kind: HorizontalPodAutoscaler
+# metadata:
+#   name: springboot-app-hpa
+#   labels:
+#     app: springboot-app
+#     component: backend
+# spec:
+#   scaleTargetRef:
+#     apiVersion: apps/v1
+#     kind: Deployment
+#     name: springboot-app
+#   minReplicas: 1
+#   maxReplicas: 5    # 对于数据库应用，副本数不宜过多
+#   behavior:
+#     scaleDown:
+#       stabilizationWindowSeconds: 600  # Java应用启动慢，缩容窗口设为10分钟
+#       policies:
+#         - type: Pods
+#           value: 1
+#           periodSeconds: 300
+#     scaleUp:
+#       stabilizationWindowSeconds: 120  # 扩容窗口2分钟
+#       policies:
+#         - type: Pods
+#           value: 2
+#           periodSeconds: 60
+#   metrics:
+#     # CPU 指标 - Java 应用通常 CPU 敏感
+#     - type: Resource
+#       resource:
+#         name: cpu
+#         target:
+#           type: Utilization
+#           averageUtilization: 70
+    
+#     # 内存指标 - 特别重要，防止 OOM
+#     - type: Resource
+#       resource:
+#         name: memory
+#         target:
+#           type: Utilization
+#           averageUtilization: 80

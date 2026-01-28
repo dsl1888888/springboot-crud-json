@@ -18,13 +18,25 @@ spec:
         - name: springboot-app
           # image: registry.cn-hongkong.aliyuncs.com/demollx/my-springboot-crud-json-forjava-image:latest
           image: harbor.llx123456.space:1443/private/my-springboot-crud-json-forjava-image:latest
-          
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
+          # set cpu memory for hpa
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+
           env:
             - name: JAVA_OPTS
-              value: "-Xms256m -Xmx512m"
+              value: >
+                -XX:MaxRAMPercentage=75.0
+                -XX:InitialRAMPercentage=50.0
+                -XX:+UseG1GC
+                -XX:+ExitOnOutOfMemoryError
 ---
 apiVersion: v1
 kind: Service
@@ -39,14 +51,29 @@ spec:
       targetPort: 8080  # 这个保持 8080，是容器端口
   type: ClusterIP       # 改为 ClusterIP ，  如果是 LoadBalancer (Pending) 会显示pendding
 ---
+#apiVersion: networking.k8s.io/v1
+#kind: Ingress
+#metadata:
+#  name: springboot-app-ingress
+#spec:
+#  rules:
+#    - host: java.ingress.llx123456.space
+#      http:
+#        paths:
+#          - path: /
+#            pathType: Prefix
+#            backend:
+#              service:
+#                name: springboot-app-service
+#                port:
+#                  number: 80    # 这里也要改为 80
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: springboot-app-ingress
 spec:
   rules:
-    - host: java.ingress.llx123456.space
-      http:
+    - http:
         paths:
           - path: /
             pathType: Prefix
@@ -54,4 +81,4 @@ spec:
               service:
                 name: springboot-app-service
                 port:
-                  number: 80    # 这里也要改为 80
+                  number: 80
